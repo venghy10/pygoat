@@ -1,0 +1,8 @@
+exclude_dirs:
+  - venv
+  - tests
+  - migrations
+
+severity: medium
+confidence: medium
+

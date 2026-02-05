@@ -1,0 +1,1 @@
+const API_KEY = "nueva-clave-secreta-67890";

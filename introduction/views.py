@@ -17,6 +17,7 @@ from random import randint
 from xml.dom.pulldom import START_ELEMENT, parseString
 from xml.sax import make_parser
 from xml.sax.handler import feature_external_ges
+from django.contrib.auth.hashers import check_password
 
 import jwt
 import requests
@@ -155,7 +156,7 @@ def sql_lab(request):
 
             if login.objects.filter(user=name):
 
-                sql_query = "SELECT * FROM introduction_login WHERE user='"+name+"' AND password='"+password+"'"
+                sql_query = "SELECT * FROM introduction_login WHERE user='"+name+"'AND password='"+password+"'"
                 print(sql_query)
                 try:
                     print("\nin try\n")
@@ -239,14 +240,9 @@ def xxe_lab(request):
 @csrf_exempt
 def xxe_see(request):
     if request.user.is_authenticated:
-        # Get first comment or create a default one if none exist
-        comment_obj = comments.objects.first()
-        if comment_obj is None:
-            comment_obj = comments.objects.create(
-                name='System',
-                comment='Default comment for XXE lab',
-            )
-        com = comment_obj.comment
+
+        data=comments.objects.all()
+        com=data[0].comment
         return render(request,'Lab/XXE/xxe_lab.html',{"com":com})
     else:
         return redirect('login')
@@ -416,8 +412,7 @@ def cmd_lab(request):
     if request.user.is_authenticated:
         if(request.method=="POST"):
             domain=request.POST.get('domain')
-            # Remove all common protocols (case-insensitive) and www prefix
-            domain = re.sub(r'^(?:(https?|ftp)://)?(?:www\.)?', '', domain, flags=re.IGNORECASE)
+            domain=domain.replace("https://www.",'')
             os=request.POST.get('os')
             print(os)
             if(os=='win'):
@@ -1015,21 +1010,26 @@ def crypto_failure(request):
     else:
         redirect('login')
 
-def crypto_failure_lab(request):
+def crypto_failure_lab_secure(request):
     if request.user.is_authenticated:
-        if request.method=="GET":
-            return render(request,"Lab_2021/A2_Crypto_failur/crypto_failure_lab.html")
-        elif request.method=="POST":
+        if request.method == "POST":
             username = request.POST["username"]
             password = request.POST["password"]
-            try:
-                password = md5(password.encode()).hexdigest()
-                user = CF_user.objects.filter(username=username,password=password).first()
-                return render(request,"Lab_2021/A2_Crypto_failur/crypto_failure_lab.html",{"user":user, "success":True,"failure":False})
-            except Exception as e:
-                return render(request,"Lab_2021/A2_Crypto_failur/crypto_failure_lab.html",{"success":False, "failure":True})
-    else :
-        return redirect('login')
+
+            user = CF_user.objects.filter(username=username).first()
+            if user and check_password(password, user.password):
+                return render(
+                    request,
+                    "Lab_2021/A2_Crypto_failure/crypto_failure_lab.html",
+                    {"user": user, "success": True, "failure": False}
+                )
+    else:
+        return render(
+            request,
+            "Lab_2021/A2_Crypto_failure/crypto_failure_lab.html",
+            {"success": False, "failure": True}
+        )
+        
 
 def crypto_failure_lab2(request):
     if request.user.is_authenticated:
